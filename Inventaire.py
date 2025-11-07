@@ -11,13 +11,19 @@ class Objets:
     
 class Nourriture(Objets): 
     """hérite de Objet, gère la régénération de pas avec la nourriture"""          
-    def __init__( self, nom, nb_pas_recup):
+    def __init__( self, nom):
         super().__init__(nom)
-        self.nb_pas_recup=nb_pas_recup
+        self.nb_pas_nourriture={"pomme":2,
+                           "banane":3,
+                           "gateau":10,
+                           "sandwich":15,
+                           "repas":25
+                           }
+        self.nb_pas_recup= self.nb_pas_nourriture.get(nom)
 
-    def utiliser(self, joueur):                     #ne pas confondre joueur et la classe Joueur en programmant 
+    def utiliser(self, joueur):                   
         joueur.add_inv(Objets("Pas"), self.nb_pas_recup)
-
+        joueur.utiliser_objet(self.nom)
         print(f"{joueur.nom} mange {self.nom} et récupère {self.nb_pas_recup} pas.")
         
 class cle(Objets):                                  #pour l'instant inutile car on peut utiliser la classe objet mais va servir à ouvrir une porte
@@ -49,10 +55,8 @@ class Joueur:
             "Gemmes": {"objet": gemme("Gemmes"), "nombre": 2},
             "Cle": {"objet": cle("Cle"), "nombre": 0}
             }       # inventaire de départ 
+                 
         
-        """if self.pas <=0:
-            print("partie finie il reste pu de pas")     #à modifier j'ai pas encore implémenté la fin de partie 
-        """
 
     def add_inv(self, obj, quantite):
         """ajoute une quantite d'un objet à l'inventaire (retire si négatif)"""
