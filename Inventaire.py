@@ -1,5 +1,3 @@
-import random
-
 class Objets:                       
     def __init__(self,nom):
         """classe de base des objets du jeu, classe parente de ces mêmes objets"""
@@ -83,12 +81,16 @@ class Joueur:
 
     def ramasser_objet(self, obj): 
         """permet d'ajouter un objet à l'inventaire quand on le ramasse"""
-        if obj.nom in self.__inventaire:
+        if isinstance(obj, Nourriture):
+            obj.utiliser(self)
+
+        elif obj.nom in self.__inventaire:
             self.__inventaire[obj.nom]["nombre"] += 1
+            print(f"{obj.nom} ramassé")
             
         else:
             self.__inventaire[obj.nom] = {"objet": obj, "nombre": 1}
-        print(f"{obj.nom} ramassé")
+            print(f"{obj.nom} ramassé")
 
 
 
