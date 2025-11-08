@@ -6,8 +6,7 @@ class Objets:
         self.nom = nom
 
     def utiliser(self, joueur):
-        joueur.utiliser_objet(self.nom)
-        print(f"{joueur.nom} utilise une {self.nom}")
+        print(f"{joueur.nom} utilise {self.nom}")
     
 class Nourriture(Objets): 
     """hérite de Objet, gère la régénération de pas avec la nourriture"""          
@@ -23,70 +22,85 @@ class Nourriture(Objets):
 
     def utiliser(self, joueur):                   
         joueur.add_inv(Objets("Pas"), self.nb_pas_recup)
-        joueur.utiliser_objet(self.nom)
         print(f"{joueur.nom} mange {self.nom} et récupère {self.nb_pas_recup} pas.")
         
-class cle(Objets):                                  #pour l'instant inutile car on peut utiliser la classe objet mais va servir à ouvrir une porte
-    """hérite de Objet, gère le nombre de clés"""
+class cle(Objets):                                  
+    """hérite de Objet, gère l'utilisation des clés"""
     def __init__( self, nom):
         super().__init__(nom)
 
     def utiliser(self, joueur):
-        joueur.utiliser_objet(self.nom)
-        print(f"{joueur.nom} utilise une {self.nom}")
+        #partie.ouvrir_porte                remplacer par la fonction qui ouvre une porte
+        print(f"{joueur.nom} utilise une {self.nom} pour ouvrir la porte")
 
-class gemme(Objets):                                #pour l'instant inutile car on peut utiliser la classe objet mais va servir à choirsir une salle
-    """hérite de Objet, gère le nombre de gemmes"""
+class gemme(Objets):                                
+    """hérite de Objet, gère l'utilisation des gemmes"""
     def __init__( self, nom):
         super().__init__(nom)
 
     def utiliser(self, joueur):
-        joueur.utiliser_objet(self.nom)
-        print(f"{joueur.nom} utilise une {self.nom}")
+        #partie.choisir_piece()             remplacer par la fonction qui choisit une pièce
+        print(f"{joueur.nom} utilise une {self.nom} pour choisir une pièce")
+
+class des(Objets):
+    """hérite de Objet, gère l'utilisation des dés"""
+    def __init__( self, nom):
+        super().__init__(nom)
+
+    def utiliser(self, joueur):
+        #partie.tirer_piece()             remplacer par la fonction qui tire une pièce
+        print(f"{joueur.nom} utilise un {self.nom} et tire de nouvelles pièces")
 
 
 
 class Joueur:
     """Cette classe représente l'inventaire du joueur et ses actions """
     def __init__(self, nom):
-        self.nom= nom
-        #self.pas= 70               # valeur du début de partie 
-        self.inventaire= {"Pas": {"objet": Objets("Pas"), "nombre": 70},  
+        self.nom= nom 
+        self.__inventaire= {"Pas": {"objet": Objets("Pas"), "nombre": 70},  
             "Gemmes": {"objet": gemme("Gemmes"), "nombre": 2},
             "Cle": {"objet": cle("Cle"), "nombre": 0}
             }       # inventaire de départ 
                  
-        
+    @property   
+    def inventaire(self):     
+        """getter pour pouvoir consulter l'inventaire"""              
+        return self.__inventaire
+
 
     def add_inv(self, obj, quantite):
         """ajoute une quantite d'un objet à l'inventaire (retire si négatif)"""
         
-        if obj.nom not in self.inventaire:
-            self.inventaire[obj.nom]= {"objet": obj , "nombre": 0}
-            
-        self.inventaire[obj.nom]["nombre"]+= quantite  
+        if obj.nom not in self.__inventaire:
+            self.__inventaire[obj.nom]= {"objet": obj , "nombre": 0}
+
+        if quantite<0 and self.__inventaire[obj.nom]["nombre"] - quantite < 0:
+            print(f"pas assez de {obj.nom} dans l'inventaire")
+        else:
+            self.__inventaire[obj.nom]["nombre"]+= quantite  
             
 
 
     def ramasser_objet(self, obj): 
-        if obj.nom in self.inventaire:
-            self.inventaire[obj.nom]["nombre"] += 1
+        """permet d'ajouter un objet à l'inventaire quand on le ramasse"""
+        if obj.nom in self.__inventaire:
+            self.__inventaire[obj.nom]["nombre"] += 1
             
         else:
-            self.inventaire[obj.nom] = {"objet": obj, "nombre": 1}
+            self.__inventaire[obj.nom] = {"objet": obj, "nombre": 1}
         print(f"{obj.nom} ramassé")
 
 
 
     def utiliser_objet(self, nom_objet):
-        if nom_objet in self.inventaire and self.inventaire[nom_objet]["nombre"] >0 :
+        if nom_objet in self.__inventaire and self.__inventaire[nom_objet]["nombre"] >0 :
 
-            objet = self.inventaire[nom_objet]["objet"] 
+            objet = self.__inventaire[nom_objet]["objet"]
             objet.utiliser(self)
             
-            self.inventaire[nom_objet]["nombre"] -=1  
-            if self.inventaire[nom_objet]["nombre"]==0:
-                del self.inventaire[nom_objet]
+            self.__inventaire[nom_objet]["nombre"] -=1  
+            if self.__inventaire[nom_objet]["nombre"]==0:
+                del self.__inventaire[nom_objet]
 
             print(f"{self.nom} utilise {nom_objet}.")
         else:
