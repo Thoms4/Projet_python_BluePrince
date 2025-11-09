@@ -1,6 +1,7 @@
 import pygame
 from board import Board
 from assets import Assets
+from Inventaire import Joueur
 
 class Game:
     def __init__(self):
@@ -11,7 +12,8 @@ class Game:
         self.board = Board()
         self.assets = Assets()
         self.direction_ui = None
-        
+        self.joueur=Joueur()  
+
     def Partie_Salle(self):
         depart_x = 0
         depart_y = 0
@@ -100,7 +102,7 @@ class Game:
                         self.board.selectionner_direction("droite")
                         self.direction_ui = "droite"
                     elif event.key == pygame.K_SPACE:
-                        self.board.se_deplacer()
+                        self.board.se_deplacer(self.joueur)
                         self.direction_ui = None
 
 

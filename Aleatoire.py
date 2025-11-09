@@ -23,3 +23,12 @@ def genere_obj():
         return []
     else:
         return obj_generes
+    
+
+def tirer_pieces(grille,ligne,colonne):
+    """temporaire pour tester la génération de pièce"""
+    pieces=["Pantry","SpareRoom"]
+    i=random.randint(0,1)
+    grille[ligne][colonne] = pieces[i]
+    return grille
+    

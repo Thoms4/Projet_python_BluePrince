@@ -1,4 +1,6 @@
 import pygame
+from Inventaire import Joueur,Objets
+from Aleatoire import genere_obj, tirer_pieces
 
 # class Board:
 #     def __init__(self):
@@ -65,7 +67,7 @@ class Board:
         """Met à jour la direction choisie par le joueur."""
         self.direction = direction
 
-    def se_deplacer(self):
+    def se_deplacer(self,joueur):
         """Tente de déplacer le joueur s'il n'y a pas de mur."""
         if self.direction is None:
             return
@@ -90,6 +92,13 @@ class Board:
             self.ligne_joueur = nouvelle_ligne
             self.colonne_joueur = nouvelle_colonne
 
+        
+        if self.grille[nouvelle_ligne][nouvelle_colonne] is None:
+            self.grille=tirer_pieces(self.grille,nouvelle_ligne,nouvelle_colonne)
+            obj_genere= genere_obj()
+            for obj in obj_genere:
+                joueur.ramasser_objet(obj)
+        joueur.utiliser_objet("Pas")
         self.direction = None
         
     def tirage_piece(self):
