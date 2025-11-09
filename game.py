@@ -1,6 +1,7 @@
 import pygame
 from board import Board
 from assets import Assets
+from Inventaire import Joueur
 
 
 class Game:
@@ -12,9 +13,15 @@ class Game:
         self.board = Board()
         self.assets = Assets()
         self.direction_ui = None
+
         self.tirage_en_cours = []
         self.selection_tirage = 0
+        #fusion 
+        self.joueur=Joueur()
         
+ 
+
+
     def Partie_Salle(self):
         depart_x =  0
         depart_y = 0
@@ -126,6 +133,8 @@ class Game:
         
                         elif event.key == pygame.K_SPACE:
                             self.board.ouvrir_porte()
+                            #en commentaire pour l'instant j'utilise pas se deplacer
+                            #self.board.se_deplacer(self.joueur)
                             
         
                 
@@ -138,6 +147,8 @@ class Game:
                         elif event.key == pygame.K_RETURN:  
                             self.board.placer_piece_choisie()
                               
+                    
+
 
 
 

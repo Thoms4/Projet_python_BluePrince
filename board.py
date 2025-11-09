@@ -1,6 +1,10 @@
 import pygame
+
 import random
 import catalogue_des_pieces
+#fusion
+from Inventaire import Joueur,Objets
+from Aleatoire import genere_obj, tirer_pieces
 
 
 # class Board:
@@ -103,6 +107,7 @@ class Board:
         ligne_cible = self.ligne_joueur
         colonne_cible = self.colonne_joueur
 
+
         if self.direction == "haut":
             
             ligne_cible -= 1
@@ -137,7 +142,9 @@ class Board:
             return
         
         
-    def se_deplacer(self):
+
+    def se_deplacer(self,joueur):
+
         """Tente de déplacer le joueur s'il n'y a pas de mur."""
         if self.direction is None:
             return
@@ -162,6 +169,13 @@ class Board:
             self.ligne_joueur = nouvelle_ligne
             self.colonne_joueur = nouvelle_colonne
 
+        
+        if self.grille[nouvelle_ligne][nouvelle_colonne] is None:
+            self.grille=tirer_pieces(self.grille,nouvelle_ligne,nouvelle_colonne)
+            obj_genere= genere_obj()
+            for obj in obj_genere:
+                joueur.ramasser_objet(obj)
+        joueur.utiliser_objet("Pas")
         self.direction = None
         
     def tirer_pieces_possibles(self):
