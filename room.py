@@ -4,7 +4,8 @@ class Piece:
     def __init__(self, nom, image, portes, cout_gemmes=0, objets=None, effet=None, rarete=0, condition=None,
                  niveaux_portes=None):
         """
-        Représente une pièce du manoir.
+        Représente une pièce du manoir et défini toute ces caractéristique.
+        C'est a partir de cette class qu'on récupere les informations des pièces.
 
         :param nom: Nom de la pièce (ex: "Hall d'entrée")
         :param image: chemin ou surface pygame représentant l'image de la pièce
@@ -17,16 +18,20 @@ class Piece:
         """
         self.nom = nom
         self.image = image
-        self.portes = portes
+        self.portes = dict(portes)
         self.cout_gemmes = cout_gemmes
-        self.objets = objets if objets else []
+        self.objets = list(objets) if objets else []
         self.effet = effet
         self.rarete = rarete
         self.condition = condition
-        self.niveaux_portes = niveaux_portes if niveaux_portes else {"haut": None,"droite": None,"bas": None,"gauche": None}
-
+        self.niveaux_portes = dict(niveaux_portes) if niveaux_portes else {"haut": None,"droite": None,"bas": None,"gauche": None}
+        self.angle = 0  
 
     def tirer_niveaux_portes(self, rangee):
+        """ 
+        Cette méthode tire le niveau des portes en fonction de l'avancement dans le manoir.
+     
+        """
         
         for direction in ["haut", "droite", "bas", "gauche"]:
             if self.niveaux_portes[direction] is None:
@@ -41,3 +46,30 @@ class Piece:
                     niveau = 2
 
                 self.niveaux_portes[direction] = niveau
+                
+    def tourner_la_piece(self, sens="horaire"):
+        """ 
+        Cette méthodes tourne la pièce pour son placement sur la grille.
+        Elle est appeller dans l'oriention des pièces dans board
+        
+        """
+
+        if sens == "horaire":
+            self.angle = (self.angle - 90) % 360
+            nouvelles_portes = {
+                "haut": self.portes["gauche"],
+                "droite": self.portes["haut"],
+                "bas": self.portes["droite"],
+                "gauche": self.portes["bas"],
+            }
+            
+        elif sens == "antihoraire":
+            self.angle = (self.angle + 90) % 360
+            nouvelles_portes = {
+                "haut": self.portes["droite"],
+                "droite": self.portes["bas"],
+                "bas": self.portes["gauche"],
+                "gauche": self.portes["haut"],
+            }
+            
+        self.portes = nouvelles_portes

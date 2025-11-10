@@ -5,6 +5,13 @@ from Inventaire import Joueur
 
 
 class Game:
+    """"
+    Cette class gère l'affichage et les évenements du jeu.
+    On a deux mode : exploration et choix de pièces.
+    C'est ici qu'on appelle les méthodes de board lier au évenement soit lorsqu'on appui
+    sur uune touche.
+    
+    """
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN)
@@ -23,6 +30,10 @@ class Game:
 
 
     def Partie_Salle(self):
+        """
+        Cette méthode crée la grille visuelle, affiche les pièces et la directions
+        lors des appuis sur les touches.
+        """
         depart_x =  0
         depart_y = 0
         taille_case = 80
@@ -32,7 +43,6 @@ class Game:
         
         for l in range(lignes):
             for c in range(colonnes):
-                #if self.board.grille[l][c] is not None:
                     x = depart_x + c*taille_case
                     y = depart_y + l*taille_case
                     pygame.draw.rect(self.screen, (0,0,0),(x,y,taille_case,taille_case),1)
@@ -78,6 +88,12 @@ class Game:
 
     
     def Partie_Inventaire(self):
+        """
+        Cette méthode affiche la partie inventaire, le tirage des pièces et la sélection visible
+        des pièces lors du tirage.
+        
+        
+        """
         depart_x = 400
         depart_y = 0
         
@@ -112,6 +128,10 @@ class Game:
     
 
     def run(self):
+        """"
+        Cette méthode gere le lancement de la fenetre de eu et des évenements.
+        C'est ici que l'on regarde dans quelle mode on est. 
+        """
         running = True
         
         while running:
@@ -124,17 +144,23 @@ class Game:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_z:
                             self.board.selectionner_direction("haut")
+                            self.direction_ui = "haut"
                         elif event.key == pygame.K_s:
                             self.board.selectionner_direction("bas")
+                            self.direction_ui = "bas"
                         elif event.key == pygame.K_q:
                             self.board.selectionner_direction("gauche")
+                            self.direction_ui = "gauche"
                         elif event.key == pygame.K_d:
                             self.board.selectionner_direction("droite")
+                            self.direction_ui = "droite"
         
-                        elif event.key == pygame.K_SPACE:
-                            self.board.ouvrir_porte()
+                        # elif event.key == pygame.K_SPACE:
+                        #     self.board.ouvrir_porte()
                             #en commentaire pour l'instant j'utilise pas se deplacer
                             #self.board.se_deplacer(self.joueur)
+                        elif event.key == pygame.K_SPACE:
+                            self.board.se_deplacer()
                             
         
                 

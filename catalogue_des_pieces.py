@@ -1,4 +1,3 @@
-
 from room import Piece
 N_A = 100
 COMMONPLACE = 0
@@ -25,7 +24,7 @@ Antechamber = Piece(
     nom = "Antechamber",
     image = "assets/rooms/Antechamber.png",  
     portes={
-        "haut": None,       
+        "haut": False,       
         "droite": True,   
         "bas": True,
         "gauche": True},
@@ -40,7 +39,7 @@ TheFondation = Piece(
     nom = "TheFondation",
     image = "assets/rooms/The_Foundation.png",  
     portes={
-        "haut": None,       
+        "haut": False,       
         "droite": True,   
         "bas": True,
         "gauche": True},
@@ -68,8 +67,8 @@ Rotunda = Piece(
     nom = "Rotunda",
     image = "assets/rooms/Rotunda.png",  
     portes={
-        "haut": None,       
-        "droite": None,   
+        "haut": False,       
+        "droite": False,   
         "bas": True,
         "gauche": True},
     cout_gemmes = 3,
@@ -82,8 +81,8 @@ Parlor = Piece(
     nom = "Parlor",
     image = "assets/rooms/Parlor.png",  
     portes={
-        "haut": None,       
-        "droite": None,   
+        "haut": False,       
+        "droite": False,   
         "bas": True,
         "gauche": True},
     cout_gemmes = 0,
@@ -96,8 +95,8 @@ BilliardRoom = Piece(
     nom = "BilliardRoom",
     image = "assets/rooms/Billiard_Room.png",  
     portes={
-        "haut": None,       
-        "droite": None,   
+        "haut": False,       
+        "droite": False,   
         "bas": True,
         "gauche": True},
     cout_gemmes = 0,
