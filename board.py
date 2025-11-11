@@ -116,14 +116,16 @@ class Board:
 
         else:
             print("Aucune salle ici, ouverture d’une nouvelle porte.")
+            self.direction_pour_placement = self.direction
             self.tirer_pieces_possibles()
             self.case_cible = (ligne, colonne)
-            self.direction_pour_placement = self.direction
+            
 
         
     def tirer_pieces_possibles(self):
         """
-        Effectue le tirage aléatoire des pieces selon leur rareté.
+        Effectue le tirage aléatoire des pieces selon leur rareté et gere la rotation lors
+        du tirage.
 
         """
         poids_par_rarete = {
@@ -150,8 +152,12 @@ class Board:
             tirage = random.choices(self.pioche_initial, weights=poids, k=1)[0]
             if tirage not in pieces_tirees:
                 pieces_tirees.append(tirage)
+                
+        for piece in pieces_tirees:
+            self.orienter_piece_selon_direction(piece)
+                
     
-        # Sauvegarde le tirage actuel
+        # Sauvegarde le tirage actuel           
         self.tirage_en_cours = pieces_tirees
         self.selection_tirage = 0  # index du choix par défaut
         self.mode = "choix_piece"
@@ -173,28 +179,30 @@ class Board:
             
             
     def placer_piece_choisie(self):
-        """Place la pièce choisie sur la case cible et ré-initialise le tirage.
-        Appeller dans se_deplacer.
-        Apelle les méthodes 
+        """Place la pièce choisie sur la case cible et ré-initialise le tirage au moment
+        du placement.
+        Appeller dans game au moment de l'appui sur entrée.
+         
         """
 
         # Récupération de la pièce choisie
         piece_choisie = self.tirage_en_cours[self.selection_tirage]
         ligne, colonne = self.case_cible
         
-        
-        #on va tourner la piece pour connecter, mit dans une methode car trop long
-        self.orienter_piece_selon_direction(piece_choisie)
-        
-    
-        # Placement dans la grille
-        self.grille[ligne][colonne] = piece_choisie
-   
-
+        #on eleve d'abord de la pioche la piece
         if piece_choisie in self.pioche_initial:
             self.pioche_initial.remove(piece_choisie)
+        #puis on cree une copie qu'on va placer
+        piece_choisie_a_placer = copy.deepcopy(piece_choisie)
+            
+        # Placement dans la grille
+        self.grille[ligne][colonne] = piece_choisie_a_placer
     
-        # ré-initialistion du tirage
+        # ré-initialistion du tirage de toute les pieces, utile plus tard quand la pioche
+        #aura plusieur meme piece de base
+        for piece in self.tirage_en_cours:
+            piece.reinitialiser_rotation()
+            
         self.tirage_en_cours = []
         self.selection_tirage = 0
         self.case_cible = None
@@ -262,7 +270,9 @@ class Board:
             elif self.direction_pour_placement == "bas":
                 piece.tourner_la_piece("horaire")
                 piece.tourner_la_piece("horaire")
-
+            
+        
+                
             
                 
 
