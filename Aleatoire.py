@@ -1,5 +1,5 @@
 import random
-from Inventaire import cle, gemme, Nourriture, Joueur
+from Inventaire import cle, gemme, Nourriture, des, PieceOr, Objets
 
 def genere_obj():
     "tire aléatoirement les objets qui seront présents dans la pièce"
@@ -11,6 +11,8 @@ def genere_obj():
         (Nourriture("gateau"), 0.02),
         (Nourriture("sandwich"), 0.02),
         (Nourriture("repas"), 0.01),
+        (des("Des"), 0.05),
+        (PieceOr("Pieces"), 0.25),
         (None, 0.2)  # Rien dans la pièce
     ]
 
@@ -23,7 +25,26 @@ def genere_obj():
         return []
     else:
         return obj_generes
-    
+
+def objets_depuis_tags(tags):
+    """Transforme les tags définis dans catalogue_des_pieces en objets concrets."""
+    objets = []
+    for tag in tags:
+        tag_normalise = tag.lower()
+        if tag_normalise == "cle":
+            objets.append(cle("Cle"))
+        elif tag_normalise == "gemme":
+            objets.append(gemme("Gemmes"))
+        elif tag_normalise == "or":
+            objets.append(PieceOr("Pieces"))
+        elif tag_normalise == "des":
+            objets.append(des("Des"))
+        elif tag_normalise == "puzzle":
+            objets.append(Objets("Puzzle"))
+        else:
+            # inconnu -> ignorer (peut être étendu plus tard)
+            pass
+    return objets
 
 def tirer_pieces(grille,ligne,colonne):
     """temporaire pour tester la génération de pièce"""

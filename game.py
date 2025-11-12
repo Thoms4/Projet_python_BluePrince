@@ -17,14 +17,13 @@ class Game:
         self.screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN)
         pygame.display.set_caption("Blue Prince Prototype")
         self.clock = pygame.time.Clock()
-        self.board = Board()
+        self.joueur = Joueur()
+        self.board = Board(self.joueur)
         self.assets = Assets()
         self.direction_ui = None
 
         self.tirage_en_cours = []
         self.selection_tirage = 0
-        #fusion 
-        self.joueur=Joueur()
         
  
 
@@ -101,8 +100,47 @@ class Game:
         hauteur = 1080
         
         pygame.draw.rect(self.screen, (255,255,255),(depart_x,depart_y,largeur,hauteur))
+
+        # ressources du joueur
+        ressources = [
+            ("Pas", self.joueur.get_quantite("Pas")),
+            ("Gemmes", self.joueur.get_quantite("Gemmes")),
+            ("Clés", self.joueur.get_quantite("Cle")),
+            ("Dés", self.joueur.get_quantite("Des")),
+            ("Pièces", self.joueur.get_quantite("Pieces")),
+        ]
+
+        font = pygame.font.Font(None, 36)
+        for idx, (nom, valeur) in enumerate(ressources):
+            text = font.render(f"{nom} : {valeur}", True, (0, 0, 0))
+            self.screen.blit(text, (depart_x + 20, 40 + idx * 40))
+        
+        if self.board.message:
+            info_font = pygame.font.Font(None, 28)
+            message_surface = info_font.render(self.board.message, True, (30, 30, 30))
+            self.screen.blit(message_surface, (depart_x + 20, 220))
+
+        if self.board.magasin_actif:
+            shop_font = pygame.font.Font(None, 28)
+            title = shop_font.render(f"Magasin ({self.board.magasin_actif['piece']})", True, (0, 0, 120))
+            self.screen.blit(title, (depart_x + 20, 260))
+            for idx, option in enumerate(self.board.magasin_actif["options"]):
+                text = shop_font.render(f"{idx+1}. {option['label']}", True, (0, 0, 0))
+                self.screen.blit(text, (depart_x + 40, 300 + idx * 30))
+            instr = shop_font.render("Appuyez sur 1/2/3 pour acheter", True, (0, 0, 0))
+            self.screen.blit(instr, (depart_x + 20, 390))
         
         
+        # état de fin de partie
+        if self.board.partie_terminee:
+            status_font = pygame.font.Font(None, 48)
+            if self.board.raison_fin == "victoire":
+                message = "Victoire ! Vous avez atteint l'antichambre."
+            else:
+                message = "Défaite : vous n'avez plus de pas."
+            status_text = status_font.render(message, True, (0, 120, 0) if self.board.raison_fin == "victoire" else (180, 0, 0))
+            self.screen.blit(status_text, (depart_x + 20, 280))
+
         #tirage du bas affichage
         if self.board.tirage_en_cours:
             y_img = 450
@@ -138,6 +176,14 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.KEYDOWN and self.board.magasin_actif:
+                    if event.key in (pygame.K_1, pygame.K_KP1):
+                        self.board.acheter_objet_magasin(0)
+                    elif event.key in (pygame.K_2, pygame.K_KP2):
+                        self.board.acheter_objet_magasin(1)
+                    elif event.key in (pygame.K_3, pygame.K_KP3):
+                        self.board.acheter_objet_magasin(2)
+                    continue
         
                 
                 if self.board.mode == "exploration":
@@ -170,6 +216,8 @@ class Game:
                             self.board.changer_selection_tirage("gauche")
                         elif event.key == pygame.K_RIGHT:
                             self.board.changer_selection_tirage("droite")
+                        elif event.key == pygame.K_r:
+                            self.board.relancer_tirage()
                         elif event.key == pygame.K_RETURN:  
                             self.board.placer_piece_choisie()
                               
@@ -182,5 +230,9 @@ class Game:
             self.Partie_Inventaire()
             pygame.display.flip()
             self.clock.tick(30)
+
+            if self.board.partie_terminee:
+                pygame.time.wait(2000)
+                running = False
 
         pygame.quit()

@@ -1,11 +1,16 @@
-import pygame
-
 import random
 import catalogue_des_pieces
-#fusion
-from Inventaire import Joueur,Objets
-from Aleatoire import genere_obj, tirer_pieces
+from Aleatoire import genere_obj, objets_depuis_tags
+from Inventaire import cle, gemme, des, Nourriture, Objets
 import copy
+
+SHOP_DEFINITIONS = {
+    "StoreRoom": [
+        {"label": "Acheter 1 clé (3 pièces)", "cout": 3, "action": "cle"},
+        {"label": "Acheter 1 dé (5 pièces)", "cout": 5, "action": "de"},
+        {"label": "Acheter un kit de crochetage (8 pièces)", "cout": 8, "action": "kit"},
+    ]
+}
 
 class Board:
     """" 
@@ -15,8 +20,9 @@ class Board:
     
     
     """
-    def __init__(self):
+    def __init__(self, joueur):
 
+        self.joueur = joueur
         self.grille = [[None for _ in range(5)] for _ in range(9)]
         self.ligne_joueur = 8  
         self.colonne_joueur = 2  
@@ -30,6 +36,13 @@ class Board:
         self.pioche_initial = copy.deepcopy(catalogue_des_pieces.pioche)
         self.mode = "exploration"
         self.direction_pour_placement = None
+        self.partie_terminee = False
+        self.raison_fin = None
+        self.message = ""
+        self.pieces_fouillees = {(self.ligne_joueur, self.colonne_joueur)}
+        self.magasin_actif = None
+        self.grille[self.ligne_joueur][self.colonne_joueur].tirer_niveaux_portes(self.ligne_joueur)
+        self.grille[self.ligne_antechambert][self.colonne_antechambert].tirer_niveaux_portes(self.ligne_antechambert)
         
         
 
@@ -83,8 +96,17 @@ class Board:
         C'est la méthodes qui va appeller les autres indirectement pour l'avancer dans le jeu.
         Cette méthode est appeller dans le fichier game lors d'un évenement (appui sur espace).
         """
+        if self.partie_terminee:
+            return
+
         piece_actuelle = self.grille[self.ligne_joueur][self.colonne_joueur]
         if self.direction is None:
+            return
+
+        if self.joueur.get_quantite("Pas") <= 0:
+            self._terminer_partie("plus_de_pas")
+            print("Vous n'avez plus de pas, la partie est terminée.")
+            self.message = "Défaite : plus de pas."
             return
     
         ligne = self.ligne_joueur
@@ -106,21 +128,26 @@ class Board:
         
         if piece_actuelle.portes[self.direction] == False:
             print("Pas de porte ici!")
+            self.message = "Pas de porte dans cette direction."
             return
-       
+
+        niveau_porte = self._obtenir_niveau_porte(piece_actuelle, self.direction, self.ligne_joueur)
 
         if self.grille[ligne][colonne] is not None:
             self.ligne_joueur = ligne
             self.colonne_joueur = colonne
             print(f"Le joueur s’est déplacé en ({ligne}, {colonne})")
+            self.message = ""
+            self._apres_deplacement()
 
         else:
+            if not self._essayer_ouvrir_porte(niveau_porte):
+                return
             print("Aucune salle ici, ouverture d’une nouvelle porte.")
             self.direction_pour_placement = self.direction
             self.tirer_pieces_possibles()
             self.case_cible = (ligne, colonne)
-            
-
+            self.message = "Choisissez une pièce à placer."
         
     def tirer_pieces_possibles(self):
         """
@@ -148,10 +175,18 @@ class Board:
     
         
         pieces_tirees = []
+        essais = 0
         while len(pieces_tirees) < 3:
             tirage = random.choices(self.pioche_initial, weights=poids, k=1)[0]
             if tirage not in pieces_tirees:
                 pieces_tirees.append(tirage)
+            essais += 1
+            if essais > 200:
+                break
+        if not any(piece.cout_gemmes == 0 for piece in pieces_tirees):
+            zero_cost = [p for p in self.pioche_initial if p.cout_gemmes == 0]
+            if zero_cost:
+                pieces_tirees[-1] = random.choice(zero_cost)
                 
         for piece in pieces_tirees:
             self.orienter_piece_selon_direction(piece)
@@ -164,6 +199,22 @@ class Board:
     
         #print("Tirage :", [piece.nom for piece in pieces_tirees])
         return pieces_tirees
+
+    def relancer_tirage(self):
+        """Permet de relancer le tirage en dépensant un dé."""
+        if self.mode != "choix_piece":
+            self.message = "Impossible de relancer hors tirage."
+            return False
+        if self.joueur.get_quantite("Des") <= 0:
+            self.message = "Pas de dé disponible pour relancer."
+            return False
+
+        self.joueur.utiliser_objet("Des")
+        for piece in self.tirage_en_cours:
+            piece.reinitialiser_rotation()
+        self.tirer_pieces_possibles()
+        self.message = "Nouveau tirage (1 dé utilisé)."
+        return True
 
         
 
@@ -188,12 +239,23 @@ class Board:
         # Récupération de la pièce choisie
         piece_choisie = self.tirage_en_cours[self.selection_tirage]
         ligne, colonne = self.case_cible
+        piece_source = self.grille[self.ligne_joueur][self.colonne_joueur]
+        cout = piece_choisie.cout_gemmes
+        if cout > 0:
+            if self.joueur.get_quantite("Gemmes") < cout:
+                self.message = f"Besoin de {cout} gemme(s) pour placer {piece_choisie.nom}."
+                print("Pas assez de gemmes pour cette pièce.")
+                return
+            for _ in range(cout):
+                self.joueur.utiliser_objet("Gemmes")
         
         #on eleve d'abord de la pioche la piece
         if piece_choisie in self.pioche_initial:
             self.pioche_initial.remove(piece_choisie)
         #puis on cree une copie qu'on va placer
         piece_choisie_a_placer = copy.deepcopy(piece_choisie)
+        piece_choisie_a_placer.tirer_niveaux_portes(ligne)
+        self._synchroniser_porte_ouverte(piece_source, piece_choisie_a_placer)
             
         # Placement dans la grille
         self.grille[ligne][colonne] = piece_choisie_a_placer
@@ -208,9 +270,157 @@ class Board:
         self.case_cible = None
         self.direction_pour_placement = None
         print(f" Pièce '{piece_choisie.nom}' placée en ({ligne}, {colonne})")
+        self.message = "Pièce placée."
     
         # Retour au mode exploration
         self.mode = "exploration"
+
+    def _apres_deplacement(self):
+        """Consomme un pas et vérifie les conditions de fin de partie."""
+        self.joueur.utiliser_objet("Pas")
+        self._traiter_entree_piece()
+
+        if (self.ligne_joueur == self.ligne_antechambert and
+                self.colonne_joueur == self.colonne_antechambert):
+            self._terminer_partie("victoire")
+            print("Vous avez atteint l'antichambre !")
+            return
+
+        if self.joueur.get_quantite("Pas") <= 0:
+            self._terminer_partie("plus_de_pas")
+            print("Vous n'avez plus de pas, la partie est terminée.")
+
+    def _terminer_partie(self, raison):
+        """Enregistre la fin de partie avec la raison indiquée."""
+        self.partie_terminee = True
+        self.raison_fin = raison
+        if raison == "victoire":
+            self.message = "Victoire !"
+        elif raison == "plus_de_pas":
+            self.message = "Défaite : plus de pas."
+
+    def _obtenir_niveau_porte(self, piece, direction, ligne):
+        """S'assure que la pièce a un niveau pour la porte donnée et le retourne."""
+        piece.tirer_niveaux_portes(ligne)
+        return piece.niveaux_portes.get(direction, 0)
+
+    def _essayer_ouvrir_porte(self, niveau):
+        """Tente d'ouvrir la porte en consommant les ressources nécessaires."""
+        if niveau == 0:
+            self.message = "Porte déverrouillée."
+            return True
+
+        if niveau == 1:
+            if self.joueur.possede_kit_crochetage():
+                self.message = "Kit de crochetage utilisé pour la porte niveau 1."
+                return True
+            if self.joueur.get_quantite("Cle") > 0:
+                self.joueur.utiliser_objet("Cle")
+                self.message = "1 clé dépensée pour la porte niveau 1."
+                return True
+            self.message = "Porte niveau 1 : une clé est nécessaire."
+            print("Impossible d'ouvrir la porte niveau 1 sans clé.")
+            return False
+
+        if niveau == 2:
+            if self.joueur.get_quantite("Cle") > 0:
+                self.joueur.utiliser_objet("Cle")
+                self.message = "1 clé dépensée pour la porte niveau 2."
+                return True
+            self.message = "Porte niveau 2 : une clé est nécessaire."
+            print("Impossible d'ouvrir la porte niveau 2 sans clé.")
+            return False
+
+        return True
+
+    def _synchroniser_porte_ouverte(self, piece_source, piece_nouvelle):
+        """Copie le niveau de verrouillage de la porte déjà ouverte vers la nouvelle pièce."""
+        if self.direction_pour_placement is None:
+            return
+        opposites = {"haut": "bas", "bas": "haut", "gauche": "droite", "droite": "gauche"}
+        direction_opposite = opposites.get(self.direction_pour_placement)
+        if direction_opposite is None:
+            return
+        piece_source.tirer_niveaux_portes(self.ligne_joueur)
+        niveau = piece_source.niveaux_portes.get(self.direction_pour_placement, 0)
+        piece_nouvelle.niveaux_portes[direction_opposite] = niveau
+
+    def _traiter_entree_piece(self):
+        """Génère les objets de la pièce lors de la première visite."""
+        coord = (self.ligne_joueur, self.colonne_joueur)
+        self.magasin_actif = None
+        if coord in self.pieces_fouillees:
+            self._ouvrir_magasin_si_disponible(self.grille[self.ligne_joueur][self.colonne_joueur])
+            return
+
+        piece = self.grille[self.ligne_joueur][self.colonne_joueur]
+        butin = []
+
+        if piece.objets:
+            tags_specifiques = [tag for tag in piece.objets if tag != "aleatoire"]
+            butin.extend(objets_depuis_tags(tags_specifiques))
+            tirages = piece.objets.count("aleatoire")
+            for _ in range(tirages):
+                butin.extend(genere_obj())
+        else:
+            butin.extend(genere_obj())
+
+        noms = []
+        for obj in butin:
+            self.joueur.ramasser_objet(obj)
+            noms.append(obj.nom)
+
+        if noms:
+            self.message = "Objets ramassés : " + ", ".join(noms)
+        else:
+            self.message = "La pièce semble vide."
+
+        self.pieces_fouillees.add(coord)
+        self._ouvrir_magasin_si_disponible(piece)
+
+    def _ouvrir_magasin_si_disponible(self, piece):
+        """Active l'interface de magasin si la pièce correspond."""
+        if piece.nom in SHOP_DEFINITIONS:
+            self.magasin_actif = {
+                "piece": piece.nom,
+                "options": SHOP_DEFINITIONS[piece.nom]
+            }
+            self.message = "Magasin ouvert : appuyez sur 1/2/3..."
+        else:
+            self.magasin_actif = None
+
+    def acheter_objet_magasin(self, index):
+        """Permet d'acheter un objet dans le magasin actif."""
+        if not self.magasin_actif:
+            self.message = "Pas de magasin ici."
+            return False
+        options = self.magasin_actif["options"]
+        if index < 0 or index >= len(options):
+            self.message = "Option de magasin invalide."
+            return False
+        option = options[index]
+        cout = option["cout"]
+        if option["action"] == "kit" and self.joueur.possede_kit_crochetage():
+            self.message = "Kit déjà possédé."
+            return False
+        if self.joueur.get_quantite("Pieces") < cout:
+            self.message = "Pas assez de pièces."
+            return False
+        self.joueur.retirer_objet("Pieces", cout)
+        self._appliquer_achat_magasin(option["action"])
+        self.message = f"Achat réussi : {option['label']}"
+        return True
+
+    def _appliquer_achat_magasin(self, action):
+        """Applique les effets de l'achat."""
+        if action == "cle":
+            self.joueur.add_inv(cle("Cle"), 1)
+        elif action == "de":
+            self.joueur.add_inv(des("Des"), 1)
+        elif action == "kit":
+            self.joueur.obtenir_kit_crochetage()
+        elif action == "pas5":
+            self.joueur.add_inv(Objets("Pas"), 5)
 
     def orienter_piece_selon_direction(self, piece):
         """
@@ -275,6 +485,3 @@ class Board:
                 
             
                 
-
-
-
