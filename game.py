@@ -130,10 +130,10 @@ class Game:
             self.screen.blit(title, (depart_x + 20, 260))
             for idx, option in enumerate(self.board.magasin_actif["options"]):
                 text = shop_font.render(f"{idx+1}. {option['label']}", True, (0, 0, 0))
-                self.screen.blit(text, (depart_x + 40, 300 + idx * 30))
+                self.screen.blit(text, (depart_x + 40, 300 + idx * 50))
             max_option = len(self.board.magasin_actif["options"])
             instr = shop_font.render(f"Appuyez sur 1-{max_option} pour acheter", True, (0, 0, 0))
-            self.screen.blit(instr, (depart_x + 20, 390))
+            self.screen.blit(instr, (depart_x + 20, 300 + max_option * 50))
 
         interactions = self.board.interactions_disponibles()
         if interactions:
