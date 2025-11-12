@@ -121,7 +121,7 @@ Room8= Piece(
     image = "assets/rooms/Room_8.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": True},
     cout_gemmes = 0,
-    objets = [],
+    objets = ["aleatoire","creuser","permanent_pelle"],
     effet = None,
     rarete = RARE,
 )
@@ -131,7 +131,7 @@ Closet = Piece(
     image = "assets/rooms/Closet.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": False},
     cout_gemmes = 0,
-    objets = ["aleatoire","aleatoire"],
+    objets = ["aleatoire","aleatoire","coffre","permanent_marteau"],
     effet = None,
     rarete = COMMONPLACE,
 )
@@ -141,7 +141,7 @@ WalkInCloset = Piece(
     image = "assets/rooms/Walk-in_Closet.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": False},
     cout_gemmes = 1,
-    objets = ["aleatoire","aleatoire","aleatoire","aleatoire"],
+    objets = ["aleatoire","aleatoire","aleatoire","aleatoire","permanent_patte_lapin"],
     effet = None,
     rarete = STANDART,
 )
@@ -151,7 +151,7 @@ Attic = Piece(
     image = "assets/rooms/Attic.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": False},
     cout_gemmes = 1,
-    objets = ["aleatoire","aleatoire","aleatoire","aleatoire"],
+    objets = ["aleatoire","aleatoire","aleatoire","aleatoire","permanent_detecteur"],
     effet = None,
     rarete = RARE,
 )
@@ -161,7 +161,7 @@ StoreRoom = Piece(
     image = "assets/rooms/StoreRoom.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": False},
     cout_gemmes = 0,
-    objets = ["cle","gemme","or"],
+    objets = ["cle","gemme","or","casier"],
     effet = None,
     rarete = COMMONPLACE,
 )

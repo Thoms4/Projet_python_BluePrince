@@ -1,6 +1,6 @@
 import random
 import catalogue_des_pieces
-from Aleatoire import genere_obj, objets_depuis_tags
+from Aleatoire import genere_obj, objets_depuis_tags, generer_butin_interaction
 from Inventaire import cle, gemme, des, Nourriture, Objets
 import copy
 
@@ -9,8 +9,20 @@ SHOP_DEFINITIONS = {
         {"label": "Acheter 1 clé (3 pièces)", "cout": 3, "action": "cle"},
         {"label": "Acheter 1 dé (5 pièces)", "cout": 5, "action": "de"},
         {"label": "Acheter un kit de crochetage (8 pièces)", "cout": 8, "action": "kit"},
+        {"label": "Acheter un détecteur de métaux (10 pièces)", "cout": 10, "action": "detecteur"},
+        {"label": "Acheter une patte de lapin (12 pièces)", "cout": 12, "action": "patte"},
+        {"label": "Acheter une pelle (9 pièces)", "cout": 9, "action": "pelle"},
+        {"label": "Acheter un marteau (11 pièces)", "cout": 11, "action": "marteau"},
     ]
 }
+
+INTERACTION_CONFIG = {
+    "coffre": {"key": "C", "label": "Ouvrir le coffre"},
+    "casier": {"key": "V", "label": "Ouvrir le casier"},
+    "creuser": {"key": "F", "label": "Creuser"},
+}
+
+INTERACTIVE_TAGS = set(INTERACTION_CONFIG.keys())
 
 class Board:
     """" 
@@ -41,6 +53,7 @@ class Board:
         self.message = ""
         self.pieces_fouillees = {(self.ligne_joueur, self.colonne_joueur)}
         self.magasin_actif = None
+        self.interactions = {}
         self.grille[self.ligne_joueur][self.colonne_joueur].tirer_niveaux_portes(self.ligne_joueur)
         self.grille[self.ligne_antechambert][self.colonne_antechambert].tirer_niveaux_portes(self.ligne_antechambert)
         
@@ -216,6 +229,20 @@ class Board:
         self.message = "Nouveau tirage (1 dé utilisé)."
         return True
 
+    def annuler_tirage(self):
+        """Permet d'annuler un tirage en cours pour revenir à l'exploration."""
+        if self.mode != "choix_piece":
+            return False
+        for piece in self.tirage_en_cours:
+            piece.reinitialiser_rotation()
+        self.tirage_en_cours = []
+        self.selection_tirage = 0
+        self.case_cible = None
+        self.direction_pour_placement = None
+        self.mode = "exploration"
+        self.message = "Tirage annulé."
+        return True
+
         
 
     def changer_selection_tirage(self, direction):
@@ -356,19 +383,36 @@ class Board:
         piece = self.grille[self.ligne_joueur][self.colonne_joueur]
         butin = []
 
+        interactions_in_piece = []
         if piece.objets:
-            tags_specifiques = [tag for tag in piece.objets if tag != "aleatoire"]
+            permanents = [tag for tag in piece.objets if tag.lower().startswith("permanent_")]
+            tags_specifiques = [
+                tag for tag in piece.objets
+                if tag != "aleatoire"
+                and tag not in permanents
+                and tag.lower() not in INTERACTIVE_TAGS
+            ]
             butin.extend(objets_depuis_tags(tags_specifiques))
             tirages = piece.objets.count("aleatoire")
             for _ in range(tirages):
-                butin.extend(genere_obj())
+                butin.extend(genere_obj(self.joueur))
+            interactions_in_piece = [
+                tag.lower() for tag in piece.objets if tag.lower() in INTERACTIVE_TAGS
+            ]
         else:
-            butin.extend(genere_obj())
+            butin.extend(genere_obj(self.joueur))
 
         noms = []
         for obj in butin:
             self.joueur.ramasser_objet(obj)
             noms.append(obj.nom)
+
+        if piece.objets:
+            permanents = [tag for tag in piece.objets if tag.lower().startswith("permanent_")]
+            for perm in permanents:
+                label = self._donner_permanent(perm)
+                if label:
+                    noms.append(f"{label} (permanent)")
 
         if noms:
             self.message = "Objets ramassés : " + ", ".join(noms)
@@ -377,6 +421,24 @@ class Board:
 
         self.pieces_fouillees.add(coord)
         self._ouvrir_magasin_si_disponible(piece)
+        self._initialiser_interactions(coord, interactions_in_piece)
+
+    def _donner_permanent(self, tag):
+        """Débloque un objet permanent si disponible."""
+        mapping = {
+            "permanent_detecteur": ("Détecteur de métaux", "detecteur_metaux"),
+            "permanent_patte_lapin": ("Patte de lapin", "patte_lapin"),
+            "permanent_pelle": ("Pelle", "pelle"),
+            "permanent_marteau": ("Marteau", "marteau"),
+        }
+        cle = tag.lower()
+        if cle not in mapping:
+            return None
+        label, identifiant = mapping[cle]
+        if self.joueur.possede_permanent(identifiant):
+            return None
+        self.joueur.obtenir_permanent(identifiant)
+        return label
 
     def _ouvrir_magasin_si_disponible(self, piece):
         """Active l'interface de magasin si la pièce correspond."""
@@ -385,9 +447,26 @@ class Board:
                 "piece": piece.nom,
                 "options": SHOP_DEFINITIONS[piece.nom]
             }
-            self.message = "Magasin ouvert : appuyez sur 1/2/3..."
+            self.message = "Magasin ouvert : utilisez les touches numériques."
         else:
             self.magasin_actif = None
+
+    def _initialiser_interactions(self, coord, tags):
+        if not tags:
+            return
+        data = self.interactions.get(coord, {})
+        for tag in tags:
+            if tag not in data:
+                data[tag] = {"etat": "disponible"}
+        self.interactions[coord] = data
+
+    def interactions_disponibles(self):
+        coord = (self.ligne_joueur, self.colonne_joueur)
+        data = self.interactions.get(coord, {})
+        return [
+            {"type": action, "termine": info["etat"] == "termine"}
+            for action, info in data.items()
+        ]
 
     def acheter_objet_magasin(self, index):
         """Permet d'acheter un objet dans le magasin actif."""
@@ -402,6 +481,12 @@ class Board:
         cout = option["cout"]
         if option["action"] == "kit" and self.joueur.possede_kit_crochetage():
             self.message = "Kit déjà possédé."
+            return False
+        if option["action"] == "detecteur" and self.joueur.possede_permanent("detecteur_metaux"):
+            self.message = "Détecteur déjà possédé."
+            return False
+        if option["action"] == "patte" and self.joueur.possede_permanent("patte_lapin"):
+            self.message = "Patte de lapin déjà possédée."
             return False
         if self.joueur.get_quantite("Pieces") < cout:
             self.message = "Pas assez de pièces."
@@ -419,8 +504,72 @@ class Board:
             self.joueur.add_inv(des("Des"), 1)
         elif action == "kit":
             self.joueur.obtenir_kit_crochetage()
+        elif action == "detecteur":
+            self.joueur.obtenir_permanent("detecteur_metaux")
+        elif action == "patte":
+            self.joueur.obtenir_permanent("patte_lapin")
+        elif action == "pelle":
+            self.joueur.obtenir_permanent("pelle")
+        elif action == "marteau":
+            self.joueur.obtenir_permanent("marteau")
         elif action == "pas5":
             self.joueur.add_inv(Objets("Pas"), 5)
+
+    def executer_interaction(self, action):
+        if self.partie_terminee or self.mode != "exploration":
+            return False
+        coord = (self.ligne_joueur, self.colonne_joueur)
+        data = self.interactions.get(coord)
+        if not data or action not in data:
+            self.message = "Aucune interaction disponible."
+            return False
+        info = data[action]
+        if info["etat"] == "termine":
+            self.message = "Interaction déjà réalisée."
+            return False
+
+        if action == "coffre":
+            if not self.joueur.possede_marteau():
+                if self.joueur.get_quantite("Cle") <= 0:
+                    self.message = "Il faut une clé pour ouvrir le coffre."
+                    return False
+                self.joueur.utiliser_objet("Cle")
+            butin, permanents = generer_butin_interaction("coffre", self.joueur)
+        elif action == "casier":
+            if not self.joueur.possede_kit_crochetage():
+                if self.joueur.get_quantite("Cle") <= 0:
+                    self.message = "Il faut une clé ou un kit pour le casier."
+                    return False
+                self.joueur.utiliser_objet("Cle")
+            butin, permanents = generer_butin_interaction("casier", self.joueur)
+        elif action == "creuser":
+            if not self.joueur.possede_pelle():
+                self.message = "Vous avez besoin d'une pelle pour creuser."
+                return False
+            butin, permanents = generer_butin_interaction("creuser", self.joueur)
+        else:
+            self.message = "Interaction inconnue."
+            return False
+
+        description = self._attribuer_butin(butin, permanents)
+        info["etat"] = "termine"
+        if all(entry["etat"] == "termine" for entry in data.values()):
+            self.interactions.pop(coord, None)
+        self.message = description or "Rien trouvé."
+        return True
+
+    def _attribuer_butin(self, butin, permanents):
+        noms = []
+        for obj in butin:
+            self.joueur.ramasser_objet(obj)
+            noms.append(obj.nom)
+        for perm in permanents:
+            label = self._donner_permanent(f"permanent_{perm}")
+            if label:
+                noms.append(f"{label} (permanent)")
+        if noms:
+            return "Butin : " + ", ".join(noms)
+        return ""
 
     def orienter_piece_selon_direction(self, piece):
         """
