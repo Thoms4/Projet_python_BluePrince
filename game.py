@@ -1,5 +1,5 @@
 import pygame
-from board import Board
+from board import Board, INTERACTION_CONFIG
 from assets import Assets
 from Inventaire import Joueur
 
@@ -24,6 +24,10 @@ class Game:
 
         self.tirage_en_cours = []
         self.selection_tirage = 0
+        self.interaction_keymap = {
+            action: getattr(pygame, f"K_{cfg['key'].lower()}")
+            for action, cfg in INTERACTION_CONFIG.items()
+        }
         
  
 
@@ -130,6 +134,20 @@ class Game:
             max_option = len(self.board.magasin_actif["options"])
             instr = shop_font.render(f"Appuyez sur 1-{max_option} pour acheter", True, (0, 0, 0))
             self.screen.blit(instr, (depart_x + 20, 390))
+
+        interactions = self.board.interactions_disponibles()
+        if interactions:
+            interact_font = pygame.font.Font(None, 28)
+            title = interact_font.render("Interactions disponibles", True, (0, 120, 0))
+            base_y = 430
+            self.screen.blit(title, (depart_x + 20, base_y))
+            for idx, entry in enumerate(interactions):
+                cfg = INTERACTION_CONFIG.get(entry["type"], {})
+                key = cfg.get("key", "?")
+                label = cfg.get("label", entry["type"])
+                status = " (fait)" if entry["termine"] else ""
+                text = interact_font.render(f"[{key}] {label}{status}", True, (0, 0, 0))
+                self.screen.blit(text, (depart_x + 40, base_y + 30 + idx * 25))
         
         
         # état de fin de partie
@@ -177,17 +195,31 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                if event.type == pygame.KEYDOWN and self.board.magasin_actif:
+                if event.type == pygame.KEYDOWN and self.board.magasin_actif and not self.board.partie_terminee:
+                    handled = False
                     index = None
                     if pygame.K_1 <= event.key <= pygame.K_9:
                         index = event.key - pygame.K_1
                     elif pygame.K_KP1 <= event.key <= pygame.K_KP9:
                         index = event.key - pygame.K_KP1
                     if index is not None:
-                        self.board.acheter_objet_magasin(index)
+                        handled = self.board.acheter_objet_magasin(index)
+                    if handled:
                         continue
         
                 
+                if (event.type == pygame.KEYDOWN and
+                        self.board.mode == "exploration" and
+                        not self.board.partie_terminee):
+                    handled_interaction = False
+                    for action, keycode in self.interaction_keymap.items():
+                        if event.key == keycode:
+                            self.board.executer_interaction(action)
+                            handled_interaction = True
+                            break
+                    if handled_interaction:
+                        continue
+
                 if self.board.mode == "exploration":
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_z:

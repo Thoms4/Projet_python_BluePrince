@@ -49,12 +49,42 @@ def genere_obj(joueur=None):
 
     return obj_generes
 
+INTERACTION_TABLES = {
+    "coffre": [
+        ("piece", 0.7),
+        ("gemme", 0.5),
+        ("cle", 0.4),
+        ("de", 0.2),
+        ("permanent:marteau", 0.07),
+    ],
+    "casier": [
+        ("piece", 0.6),
+        ("nourriture:banane", 0.25),
+        ("nourriture:gateau", 0.1),
+        ("cle", 0.2),
+    ],
+    "creuser": [
+        ("piece", 0.4),
+        ("gemme", 0.3),
+        ("permanent:pelle", 0.15),
+        ("permanent:patte_lapin", 0.1),
+    ],
+}
+
 def objets_depuis_tags(tags):
     """Transforme les tags définis dans catalogue_des_pieces en objets concrets."""
     objets = []
     for tag in tags:
         tag_normalise = tag.lower()
-        if tag_normalise in {"permanent_detecteur", "permanent_patte_lapin"}:
+        if tag_normalise in {
+            "permanent_detecteur",
+            "permanent_patte_lapin",
+            "permanent_pelle",
+            "permanent_marteau",
+            "coffre",
+            "casier",
+            "creuser",
+        }:
             continue
         if tag_normalise == "cle":
             objets.append(cle("Cle"))
@@ -70,6 +100,28 @@ def objets_depuis_tags(tags):
             # inconnu -> ignorer (peut être étendu plus tard)
             pass
     return objets
+
+def generer_butin_interaction(source, joueur=None):
+    table = INTERACTION_TABLES.get(source, [])
+    if not table:
+        return [], []
+    patte = joueur.possede_patte_lapin() if joueur else False
+    butin = []
+    permanents = []
+    for tag, proba in table:
+        proba_effective = proba
+        if patte and tag and not tag.startswith("permanent:"):
+            proba_effective = min(proba_effective * 1.15, 0.95)
+        if random.random() < proba_effective:
+            if tag is None:
+                continue
+            if tag.startswith("permanent:"):
+                permanents.append(tag.split(":", 1)[1])
+            else:
+                obj = _cree_objet(tag)
+                if obj:
+                    butin.append(obj)
+    return butin, permanents
 
 def tirer_pieces(grille,ligne,colonne):
     """temporaire pour tester la génération de pièce"""

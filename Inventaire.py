@@ -64,7 +64,9 @@ class Joueur:
         self.objets_permanents = {
             "kit_crochetage": False,
             "detecteur_metaux": False,
-            "patte_lapin": False
+            "patte_lapin": False,
+            "pelle": False,
+            "marteau": False
         }
                  
     @property   
@@ -98,6 +100,12 @@ class Joueur:
 
     def possede_patte_lapin(self):
         return self.possede_permanent("patte_lapin")
+
+    def possede_pelle(self):
+        return self.possede_permanent("pelle")
+
+    def possede_marteau(self):
+        return self.possede_permanent("marteau")
 
 
     def add_inv(self, obj, quantite):
