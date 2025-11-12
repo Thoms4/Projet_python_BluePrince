@@ -229,6 +229,20 @@ class Board:
         self.message = "Nouveau tirage (1 dé utilisé)."
         return True
 
+    def annuler_tirage(self):
+        """Permet d'annuler un tirage en cours pour revenir à l'exploration."""
+        if self.mode != "choix_piece":
+            return False
+        for piece in self.tirage_en_cours:
+            piece.reinitialiser_rotation()
+        self.tirage_en_cours = []
+        self.selection_tirage = 0
+        self.case_cible = None
+        self.direction_pour_placement = None
+        self.mode = "exploration"
+        self.message = "Tirage annulé."
+        return True
+
         
 
     def changer_selection_tirage(self, direction):

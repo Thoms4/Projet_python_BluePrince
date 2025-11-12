@@ -252,6 +252,8 @@ class Game:
                             self.board.changer_selection_tirage("droite")
                         elif event.key == pygame.K_r:
                             self.board.relancer_tirage()
+                        elif event.key == pygame.K_ESCAPE:
+                            self.board.annuler_tirage()
                         elif event.key == pygame.K_RETURN:  
                             self.board.placer_piece_choisie()
                               
