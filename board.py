@@ -1,7 +1,16 @@
 import random
 import catalogue_des_pieces
 from Aleatoire import genere_obj, objets_depuis_tags
+from Inventaire import cle, gemme, des, Nourriture, Objets
 import copy
+
+SHOP_DEFINITIONS = {
+    "StoreRoom": [
+        {"label": "Acheter 1 clé (3 pièces)", "cout": 3, "action": "cle"},
+        {"label": "Acheter 1 dé (5 pièces)", "cout": 5, "action": "de"},
+        {"label": "Acheter un kit de crochetage (8 pièces)", "cout": 8, "action": "kit"},
+    ]
+}
 
 class Board:
     """" 
@@ -31,6 +40,7 @@ class Board:
         self.raison_fin = None
         self.message = ""
         self.pieces_fouillees = {(self.ligne_joueur, self.colonne_joueur)}
+        self.magasin_actif = None
         self.grille[self.ligne_joueur][self.colonne_joueur].tirer_niveaux_portes(self.ligne_joueur)
         self.grille[self.ligne_antechambert][self.colonne_antechambert].tirer_niveaux_portes(self.ligne_antechambert)
         
@@ -338,7 +348,9 @@ class Board:
     def _traiter_entree_piece(self):
         """Génère les objets de la pièce lors de la première visite."""
         coord = (self.ligne_joueur, self.colonne_joueur)
+        self.magasin_actif = None
         if coord in self.pieces_fouillees:
+            self._ouvrir_magasin_si_disponible(self.grille[self.ligne_joueur][self.colonne_joueur])
             return
 
         piece = self.grille[self.ligne_joueur][self.colonne_joueur]
@@ -364,6 +376,51 @@ class Board:
             self.message = "La pièce semble vide."
 
         self.pieces_fouillees.add(coord)
+        self._ouvrir_magasin_si_disponible(piece)
+
+    def _ouvrir_magasin_si_disponible(self, piece):
+        """Active l'interface de magasin si la pièce correspond."""
+        if piece.nom in SHOP_DEFINITIONS:
+            self.magasin_actif = {
+                "piece": piece.nom,
+                "options": SHOP_DEFINITIONS[piece.nom]
+            }
+            self.message = "Magasin ouvert : appuyez sur 1/2/3..."
+        else:
+            self.magasin_actif = None
+
+    def acheter_objet_magasin(self, index):
+        """Permet d'acheter un objet dans le magasin actif."""
+        if not self.magasin_actif:
+            self.message = "Pas de magasin ici."
+            return False
+        options = self.magasin_actif["options"]
+        if index < 0 or index >= len(options):
+            self.message = "Option de magasin invalide."
+            return False
+        option = options[index]
+        cout = option["cout"]
+        if option["action"] == "kit" and self.joueur.possede_kit_crochetage():
+            self.message = "Kit déjà possédé."
+            return False
+        if self.joueur.get_quantite("Pieces") < cout:
+            self.message = "Pas assez de pièces."
+            return False
+        self.joueur.retirer_objet("Pieces", cout)
+        self._appliquer_achat_magasin(option["action"])
+        self.message = f"Achat réussi : {option['label']}"
+        return True
+
+    def _appliquer_achat_magasin(self, action):
+        """Applique les effets de l'achat."""
+        if action == "cle":
+            self.joueur.add_inv(cle("Cle"), 1)
+        elif action == "de":
+            self.joueur.add_inv(des("Des"), 1)
+        elif action == "kit":
+            self.joueur.obtenir_kit_crochetage()
+        elif action == "pas5":
+            self.joueur.add_inv(Objets("Pas"), 5)
 
     def orienter_piece_selon_direction(self, piece):
         """

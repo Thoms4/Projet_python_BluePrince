@@ -104,6 +104,16 @@ class Joueur:
         else:
             self.__inventaire[obj.nom]["nombre"]+= quantite  
             
+    def retirer_objet(self, nom_objet, quantite):
+        """retire une quantité spécifique si possible (True si succès)."""
+        if nom_objet not in self.__inventaire:
+            return False
+        if self.__inventaire[nom_objet]["nombre"] < quantite:
+            return False
+        self.__inventaire[nom_objet]["nombre"] -= quantite
+        if self.__inventaire[nom_objet]["nombre"] == 0:
+            del self.__inventaire[nom_objet]
+        return True
 
 
     def ramasser_objet(self, obj): 

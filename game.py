@@ -119,6 +119,16 @@ class Game:
             info_font = pygame.font.Font(None, 28)
             message_surface = info_font.render(self.board.message, True, (30, 30, 30))
             self.screen.blit(message_surface, (depart_x + 20, 220))
+
+        if self.board.magasin_actif:
+            shop_font = pygame.font.Font(None, 28)
+            title = shop_font.render(f"Magasin ({self.board.magasin_actif['piece']})", True, (0, 0, 120))
+            self.screen.blit(title, (depart_x + 20, 260))
+            for idx, option in enumerate(self.board.magasin_actif["options"]):
+                text = shop_font.render(f"{idx+1}. {option['label']}", True, (0, 0, 0))
+                self.screen.blit(text, (depart_x + 40, 300 + idx * 30))
+            instr = shop_font.render("Appuyez sur 1/2/3 pour acheter", True, (0, 0, 0))
+            self.screen.blit(instr, (depart_x + 20, 390))
         
         
         # état de fin de partie
@@ -166,6 +176,14 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.KEYDOWN and self.board.magasin_actif:
+                    if event.key in (pygame.K_1, pygame.K_KP1):
+                        self.board.acheter_objet_magasin(0)
+                    elif event.key in (pygame.K_2, pygame.K_KP2):
+                        self.board.acheter_objet_magasin(1)
+                    elif event.key in (pygame.K_3, pygame.K_KP3):
+                        self.board.acheter_objet_magasin(2)
+                    continue
         
                 
                 if self.board.mode == "exploration":
