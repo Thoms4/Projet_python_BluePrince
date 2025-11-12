@@ -27,6 +27,7 @@ class Piece:
         self.niveaux_portes = dict(niveaux_portes) if niveaux_portes else {"haut": None,"droite": None,"bas": None,"gauche": None}
         self.angle = 0  
         self.portes_original = portes.copy()
+        self.niveaux_portes_original = self.niveaux_portes.copy()
         self.angle_original = 0
 
     def tirer_niveaux_portes(self, rangee):
@@ -64,6 +65,12 @@ class Piece:
                 "bas": self.portes["droite"],
                 "gauche": self.portes["bas"],
             }
+            nouveaux_niveaux = {
+                "haut": self.niveaux_portes["gauche"],
+                "droite": self.niveaux_portes["haut"],
+                "bas": self.niveaux_portes["droite"],
+                "gauche": self.niveaux_portes["bas"],
+            }
             
         elif sens == "antihoraire":
             self.angle = (self.angle + 90) % 360
@@ -73,12 +80,22 @@ class Piece:
                 "bas": self.portes["gauche"],
                 "gauche": self.portes["haut"],
             }
+            nouveaux_niveaux = {
+                "haut": self.niveaux_portes["droite"],
+                "droite": self.niveaux_portes["bas"],
+                "bas": self.niveaux_portes["gauche"],
+                "gauche": self.niveaux_portes["haut"],
+            }
+        else:
+            nouveaux_niveaux = self.niveaux_portes
             
         self.portes = nouvelles_portes
+        self.niveaux_portes = nouveaux_niveaux
 
     def reinitialiser_rotation(self):
         """
         Remet la pièce dans son orientation d'origine.
         """
         self.portes = self.portes_original.copy()
+        self.niveaux_portes = self.niveaux_portes_original.copy()
         self.angle = self.angle_original

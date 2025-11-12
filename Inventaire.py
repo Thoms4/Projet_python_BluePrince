@@ -31,6 +31,14 @@ class cle(Objets):
         #partie.ouvrir_porte                remplacer par la fonction qui ouvre une porte
         print(f"le joueur utilise une {self.nom} pour ouvrir la porte")
 
+class PieceOr(Objets):
+    """pièces d'or pour les magasins"""
+    def __init__(self, nom):
+        super().__init__(nom)
+
+    def utiliser(self, joueur):
+        print(f"{self.nom} dépensée.")
+
 class gemme(Objets):                                
     """hérite de Objet, gère l'utilisation des gemmes"""
     def __init__( self, nom):
@@ -57,13 +65,32 @@ class Joueur:
         #self.nom= nom 
         self.__inventaire= {"Pas": {"objet": Objets("Pas"), "nombre": 70},  
             "Gemmes": {"objet": gemme("Gemmes"), "nombre": 2},
-            "Cle": {"objet": cle("Cle"), "nombre": 0}
+            "Cle": {"objet": cle("Cle"), "nombre": 0},
+            "Des": {"objet": des("Des"), "nombre": 0},
+            "Pieces": {"objet": PieceOr("Pieces"), "nombre": 0}
             }       # inventaire de départ 
+        self.objets_permanents = {
+            "kit_crochetage": False
+        }
                  
     @property   
     def inventaire(self):     
         """getter pour pouvoir consulter l'inventaire"""              
         return self.__inventaire
+
+    def get_quantite(self, nom_objet):
+        """Retourne la quantité d'un objet (0 si absent)."""
+        if nom_objet in self.__inventaire:
+            return self.__inventaire[nom_objet]["nombre"]
+        return 0
+
+    def possede_kit_crochetage(self):
+        """Indique si le kit de crochetage a été obtenu."""
+        return self.objets_permanents.get("kit_crochetage", False)
+
+    def obtenir_kit_crochetage(self):
+        """Active le kit de crochetage dans les objets permanents."""
+        self.objets_permanents["kit_crochetage"] = True
 
 
     def add_inv(self, obj, quantite):
