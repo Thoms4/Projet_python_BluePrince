@@ -9,6 +9,8 @@ SHOP_DEFINITIONS = {
         {"label": "Acheter 1 clé (3 pièces)", "cout": 3, "action": "cle"},
         {"label": "Acheter 1 dé (5 pièces)", "cout": 5, "action": "de"},
         {"label": "Acheter un kit de crochetage (8 pièces)", "cout": 8, "action": "kit"},
+        {"label": "Acheter un détecteur de métaux (10 pièces)", "cout": 10, "action": "detecteur"},
+        {"label": "Acheter une patte de lapin (12 pièces)", "cout": 12, "action": "patte"},
     ]
 }
 
@@ -357,18 +359,26 @@ class Board:
         butin = []
 
         if piece.objets:
-            tags_specifiques = [tag for tag in piece.objets if tag != "aleatoire"]
+            permanents = [tag for tag in piece.objets if tag.lower().startswith("permanent_")]
+            tags_specifiques = [tag for tag in piece.objets if tag != "aleatoire" and tag not in permanents]
             butin.extend(objets_depuis_tags(tags_specifiques))
             tirages = piece.objets.count("aleatoire")
             for _ in range(tirages):
-                butin.extend(genere_obj())
+                butin.extend(genere_obj(self.joueur))
         else:
-            butin.extend(genere_obj())
+            butin.extend(genere_obj(self.joueur))
 
         noms = []
         for obj in butin:
             self.joueur.ramasser_objet(obj)
             noms.append(obj.nom)
+
+        if piece.objets:
+            permanents = [tag for tag in piece.objets if tag.lower().startswith("permanent_")]
+            for perm in permanents:
+                label = self._donner_permanent(perm)
+                if label:
+                    noms.append(f"{label} (permanent)")
 
         if noms:
             self.message = "Objets ramassés : " + ", ".join(noms)
@@ -377,6 +387,21 @@ class Board:
 
         self.pieces_fouillees.add(coord)
         self._ouvrir_magasin_si_disponible(piece)
+
+    def _donner_permanent(self, tag):
+        """Débloque un objet permanent si disponible."""
+        mapping = {
+            "permanent_detecteur": ("Détecteur de métaux", "detecteur_metaux"),
+            "permanent_patte_lapin": ("Patte de lapin", "patte_lapin"),
+        }
+        cle = tag.lower()
+        if cle not in mapping:
+            return None
+        label, identifiant = mapping[cle]
+        if self.joueur.possede_permanent(identifiant):
+            return None
+        self.joueur.obtenir_permanent(identifiant)
+        return label
 
     def _ouvrir_magasin_si_disponible(self, piece):
         """Active l'interface de magasin si la pièce correspond."""
@@ -403,6 +428,12 @@ class Board:
         if option["action"] == "kit" and self.joueur.possede_kit_crochetage():
             self.message = "Kit déjà possédé."
             return False
+        if option["action"] == "detecteur" and self.joueur.possede_permanent("detecteur_metaux"):
+            self.message = "Détecteur déjà possédé."
+            return False
+        if option["action"] == "patte" and self.joueur.possede_permanent("patte_lapin"):
+            self.message = "Patte de lapin déjà possédée."
+            return False
         if self.joueur.get_quantite("Pieces") < cout:
             self.message = "Pas assez de pièces."
             return False
@@ -419,6 +450,10 @@ class Board:
             self.joueur.add_inv(des("Des"), 1)
         elif action == "kit":
             self.joueur.obtenir_kit_crochetage()
+        elif action == "detecteur":
+            self.joueur.obtenir_permanent("detecteur_metaux")
+        elif action == "patte":
+            self.joueur.obtenir_permanent("patte_lapin")
         elif action == "pas5":
             self.joueur.add_inv(Objets("Pas"), 5)
 

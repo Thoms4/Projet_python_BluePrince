@@ -141,7 +141,7 @@ WalkInCloset = Piece(
     image = "assets/rooms/Walk-in_Closet.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": False},
     cout_gemmes = 1,
-    objets = ["aleatoire","aleatoire","aleatoire","aleatoire"],
+    objets = ["aleatoire","aleatoire","aleatoire","aleatoire","permanent_patte_lapin"],
     effet = None,
     rarete = STANDART,
 )
@@ -151,7 +151,7 @@ Attic = Piece(
     image = "assets/rooms/Attic.png",  
     portes={"haut": False,"droite": False,"bas": True,"gauche": False},
     cout_gemmes = 1,
-    objets = ["aleatoire","aleatoire","aleatoire","aleatoire"],
+    objets = ["aleatoire","aleatoire","aleatoire","aleatoire","permanent_detecteur"],
     effet = None,
     rarete = RARE,
 )

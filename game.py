@@ -127,7 +127,8 @@ class Game:
             for idx, option in enumerate(self.board.magasin_actif["options"]):
                 text = shop_font.render(f"{idx+1}. {option['label']}", True, (0, 0, 0))
                 self.screen.blit(text, (depart_x + 40, 300 + idx * 30))
-            instr = shop_font.render("Appuyez sur 1/2/3 pour acheter", True, (0, 0, 0))
+            max_option = len(self.board.magasin_actif["options"])
+            instr = shop_font.render(f"Appuyez sur 1-{max_option} pour acheter", True, (0, 0, 0))
             self.screen.blit(instr, (depart_x + 20, 390))
         
         
@@ -177,13 +178,14 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.KEYDOWN and self.board.magasin_actif:
-                    if event.key in (pygame.K_1, pygame.K_KP1):
-                        self.board.acheter_objet_magasin(0)
-                    elif event.key in (pygame.K_2, pygame.K_KP2):
-                        self.board.acheter_objet_magasin(1)
-                    elif event.key in (pygame.K_3, pygame.K_KP3):
-                        self.board.acheter_objet_magasin(2)
-                    continue
+                    index = None
+                    if pygame.K_1 <= event.key <= pygame.K_9:
+                        index = event.key - pygame.K_1
+                    elif pygame.K_KP1 <= event.key <= pygame.K_KP9:
+                        index = event.key - pygame.K_KP1
+                    if index is not None:
+                        self.board.acheter_objet_magasin(index)
+                        continue
         
                 
                 if self.board.mode == "exploration":
